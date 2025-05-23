@@ -1,47 +1,41 @@
 import { useEffect, useState } from "react";
-
-type Task = {
-  text: string;
-  completed: boolean;
-  createdAt: string;
-};
+import {
+  getTodos,
+  addTodo,
+  deleteTodo,
+  toggleComplete,
+  type FirestoreTask,
+} from "./services/todoService";
 
 function App() {
   const [task, setTask] = useState("");
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<FirestoreTask[]>([]);
   const [filter, setFilter] = useState<"all" | "completed" | "active">("all");
 
   useEffect(() => {
-    const stored = localStorage.getItem("tasks");
-    if (stored) {
-      setTasks(JSON.parse(stored));
-    }
+    fetchTasks();
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem("tasks", JSON.stringify(tasks));
-  }, [tasks]);
+  const fetchTasks = async () => {
+    const data = await getTodos();
+    setTasks(data);
+  };
 
-  const handleAddTask = () => {
+  const handleAddTask = async () => {
     if (task.trim() === "") return;
-    const newTask: Task = {
-      text: task.trim(),
-      completed: false,
-      createdAt: new Date().toISOString(),
-    };
-    setTasks([...tasks, newTask]);
+    await addTodo(task.trim());
     setTask("");
+    fetchTasks();
   };
 
-  const handleDeleteTask = (index: number) => {
-    const updated = tasks.filter((_, i) => i !== index);
-    setTasks(updated);
+  const handleDeleteTask = async (id: string) => {
+    await deleteTodo(id);
+    fetchTasks();
   };
 
-  const toggleTaskCompleted = (index: number) => {
-    const updated = [...tasks];
-    updated[index].completed = !updated[index].completed;
-    setTasks(updated);
+  const toggleTaskCompleted = async (task: FirestoreTask) => {
+    await toggleComplete(task.id, task.completed);
+    fetchTasks();
   };
 
   const filteredTasks = tasks.filter((t) => {
@@ -103,14 +97,14 @@ function App() {
             </button>
           </div>
           <ul className="space-y-2">
-            {filteredTasks.map((t, index) => (
+            {filteredTasks.map((t) => (
               <li
-                key={index}
+                key={t.id}
                 className="bg-gray-100 px-3 py-2 rounded-md flex justify-between items-center"
               >
                 <div
                   className="flex-1 cursor-pointer"
-                  onClick={() => toggleTaskCompleted(index)}
+                  onClick={() => toggleTaskCompleted(t)}
                 >
                   <span
                     className={`${
@@ -129,7 +123,7 @@ function App() {
                   </div>
                 </div>
                 <button
-                  onClick={() => handleDeleteTask(index)}
+                  onClick={() => handleDeleteTask(t.id)}
                   className="text-red-500 hover:text-red-700"
                 >
                   Sil
