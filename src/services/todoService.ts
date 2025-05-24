@@ -23,10 +23,14 @@ export type FirestoreTask = {
 };
 
 // Kullanıcıya ait görevleri getir
-export async function getTodos(userId: string): Promise<FirestoreTask[]> {
+export async function getTodos(
+  userId: string,
+  listId: string
+): Promise<FirestoreTask[]> {
   const q = query(
     todosRef,
     where("userId", "==", userId),
+    where("listId", "==", listId),
     orderBy("createdAt", "desc")
   );
   const snapshot = await getDocs(q);
@@ -37,12 +41,17 @@ export async function getTodos(userId: string): Promise<FirestoreTask[]> {
 }
 
 // Yeni görev ekle (kullanıcıya özel)
-export async function addTodo(taskText: string, userId: string): Promise<void> {
+export async function addTodo(
+  taskText: string,
+  userId: string,
+  listId: string
+): Promise<void> {
   await addDoc(todosRef, {
     text: taskText,
     completed: false,
     createdAt: new Date().toISOString(),
-    userId: userId,
+    userId,
+    listId,
   });
 }
 
