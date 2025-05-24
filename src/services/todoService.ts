@@ -5,6 +5,9 @@ import {
   deleteDoc,
   updateDoc,
   doc,
+  query,
+  where,
+  orderBy,
 } from "firebase/firestore";
 import { db } from "../firebase.ts";
 
@@ -16,23 +19,30 @@ export type FirestoreTask = {
   text: string;
   completed: boolean;
   createdAt: string;
+  userId: string;
 };
 
-// Tüm görevleri getir
-export async function getTodos(): Promise<FirestoreTask[]> {
-  const snapshot = await getDocs(todosRef);
+// Kullanıcıya ait görevleri getir
+export async function getTodos(userId: string): Promise<FirestoreTask[]> {
+  const q = query(
+    todosRef,
+    where("userId", "==", userId),
+    orderBy("createdAt", "desc")
+  );
+  const snapshot = await getDocs(q);
   return snapshot.docs.map((doc) => ({
     id: doc.id,
     ...(doc.data() as Omit<FirestoreTask, "id">),
   }));
 }
 
-// Yeni görev ekle
-export async function addTodo(taskText: string): Promise<void> {
+// Yeni görev ekle (kullanıcıya özel)
+export async function addTodo(taskText: string, userId: string): Promise<void> {
   await addDoc(todosRef, {
     text: taskText,
     completed: false,
     createdAt: new Date().toISOString(),
+    userId: userId,
   });
 }
 
